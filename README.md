@@ -1,13 +1,14 @@
 
 # TRAE
 
-[![Conference](https://img.shields.io/badge/ICDM-2026%20Applied-blue)](https://www3.cs.stonybrook.edu/~icdm2026/)
-[![Dataset](https://img.shields.io/badge/Hugging%20Face-ESG--EN-yellow)](https://huggingface.co/datasets/nowzero/ESG-EN)
+[![Paper](https://img.shields.io/badge/📄_Paper-Coming_Soon-lightgrey)](#citation)
+[![Dataset](https://img.shields.io/badge/🤗_Hugging_Face-ESG--EN-yellow)](https://huggingface.co/datasets/nowzero/ESG-EN)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 
-**Official implementation of our ICDM 2026 paper:**
-
 **TRAE: Trustworthy Automated ESG Annotation via Multi-Agent Consensus and Confidence Assessment**
+
+Official implementation of our paper accepted at **ICDM 2026 (Applied Track)**.
+
 
 TRAE is a multi-agent framework for trustworthy ESG annotation that combines consensus-based decisions, confidence assessment, and agent debate with judge-based evaluation.
 
