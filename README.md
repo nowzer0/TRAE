@@ -1,27 +1,25 @@
-
 # TRAE
 
-[![Paper](https://img.shields.io/badge/📄_Paper-Coming_Soon-lightgrey)](#citation)
-[![Dataset](https://img.shields.io/badge/🤗_Hugging_Face-ESG--EN-yellow)](https://huggingface.co/datasets/nowzero/ESG-EN)
+[![Paper](https://img.shields.io/badge/Paper-ICDM%202026-blue)](#-citation)
+[![Dataset](https://img.shields.io/badge/Hugging%20Face-ESG--EN-yellow?logo=huggingface)](https://huggingface.co/datasets/nowzero/ESG-EN)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 
 **TRAE: Trustworthy Automated ESG Annotation via Multi-Agent Consensus and Confidence Assessment**
 
-Official implementation of our paper accepted at **ICDM 2026 (Applied Track)**.
+Official implementation of our paper accepted at **ICDM 2026**.
 
-
-TRAE is a multi-agent framework for trustworthy ESG annotation that combines consensus-based decisions, confidence assessment, and agent debate with judge-based evaluation.
+TRAE is a multi-agent framework for trustworthy ESG annotation that integrates consensus-based decisions, confidence assessment, and agent debate with judge-based evaluation.
 
 This repository provides the official **TRAE annotation pipeline**, including agent prompts, provider adapters, confidence-based routing, and reproducible execution scripts.
 
-The pipeline was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), a publicly released English ESG annotation dataset.
+The framework was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), a publicly released English ESG annotation dataset.
 
 ## 📦 Resources
 
 | Resource | Description | Link |
 |---|---|---|
 | **TRAE** | Multi-agent ESG annotation framework and source code. | This repository |
-| **ESG-EN** | English ESG dataset constructed using TRAE. | [🤗 Dataset](https://huggingface.co/datasets/nowzero/ESG-EN) |
+| **ESG-EN** | English ESG annotation dataset constructed using TRAE. | [🤗 Dataset](https://huggingface.co/datasets/nowzero/ESG-EN) |
 
 ### Load ESG-EN
 
@@ -35,8 +33,9 @@ from datasets import load_dataset
 # Primary labels: train, validation, and test
 esg_en = load_dataset("nowzero/ESG-EN")
 
-# Agent traces
+# Agent annotation traces
 base = "hf://datasets/nowzero/ESG-EN/traces"
+
 step1 = load_dataset("json", data_files=f"{base}/step1.jsonl", split="train")
 step2 = load_dataset("json", data_files=f"{base}/step2.jsonl", split="train")
 step3 = load_dataset("json", data_files=f"{base}/step3.jsonl", split="train")
@@ -51,25 +50,38 @@ TRAE assigns English sentences to four categories:
 - **G:** Governance
 - **I:** ESG-irrelevant
 
-The annotation process consists of three stages:
+The annotation process consists of three routed stages:
 
-1. **Relevance Assessment:** Three independent annotators determine whether a sentence is ESG-related.
-2. **ESG Classification:** Annotators assign ESG labels with confidence scores, supporting evidence, and brief rationales.
-3. **Debate and Judgment:** Cases outside the highest-confidence route undergo agent debate and judge-based assessment.
+1. **Relevance Assessment:** Three independent annotators evaluate every input
+   sentence. Accepted negative decisions are finalized as `I`; all other
+   sentences proceed to Step 2.
+2. **ESG Classification:** The annotators assign labels, confidence scores,
+   supporting evidence, and brief rationales only to sentences routed from
+   Step 1. Accepted decisions are finalized; unresolved sentences proceed to
+   Step 3.
+3. **Debate and Judgment:** Only unresolved Step 2 cases undergo agent debate
+   and judge-based assessment. Cases not accepted by the judge are sent to the
+   human expert queue.
 
 ### Confidence-Based Annotation
 
-The default configuration reproduces the **ESG-EN Silver+ selection rule**:
+The default Step 1 and Step 2 thresholds match the high-confidence selection
+rule used for **ESG-EN Silver+**:
 
 - All three annotators must agree on the decision.
 - Each supporting confidence score must be at least **0.90**.
 - Accepted Step 1 negative decisions are assigned `I`.
 - Accepted Step 2 decisions receive the agreed ESG label.
+- Step 2 cases that do not meet the rule proceed to Step 3.
+- Step 3 decisions require judge confidence of at least **0.70** by default.
 - Remaining cases use human expert labels supplied through `--expert_csv`.
 
-Step 3 debate and judgment responses are preserved as audit traces.
+The published ESG-EN Silver+ labels use human fallback outside the accepted
+Step 1 and Step 2 routes; the released Step 3 responses are provided as audit
+traces. This repository implements the complete routed TRAE pipeline, including
+Step 3 decisions.
 
-The repository includes the dataset-construction pipeline, prompts, provider adapters, and a deterministic dry run. Experimental ablations, classifier training, and tier-comparison scripts are not included.
+This repository includes the dataset-construction pipeline, prompts, provider adapters, and a deterministic dry run. Experimental ablations, classifier training, and tier-comparison scripts are not included.
 
 ## 🚀 Quick Start
 
@@ -81,8 +93,6 @@ Python 3.10 or newer is required.
 git clone https://github.com/nowzer0/TRAE.git
 cd TRAE
 
-python -m venv .venv
-source .venv/bin/activate
 pip install -e .
 ```
 
@@ -92,7 +102,7 @@ TRAE accepts a UTF-8 CSV file containing a `sentence` column.
 
 An `id` column is recommended. If omitted, IDs are generated from row order.
 
-Optional metadata columns are preserved:
+The following optional metadata columns are preserved:
 
 - `year`
 - `report`
@@ -122,8 +132,9 @@ The default thresholds are:
 |---|---|---|
 | `--consensus` | `3` | Number of matching annotator votes required |
 | `--confidence` | `0.90` | Minimum confidence threshold |
+| `--judge-confidence` | `0.70` | Minimum Step 3 judge confidence |
 
-These thresholds can be adjusted for other datasets:
+These thresholds can be adjusted when applying TRAE to other datasets:
 
 ```bash
 python run_annotation.py \
@@ -131,13 +142,13 @@ python run_annotation.py \
   --out_dir runs/custom \
   --consensus 2 \
   --confidence 0.80 \
+  --judge-confidence 0.70 \
   --provider openai \
   --model YOUR_MODEL
 ```
 
-`--consensus` accepts `2` or `3`, and `--confidence` accepts values between `0` and `1`.
-
-**Note:** Step 3 routing follows the released audit procedure. It excludes only Step 2 cases with unanimous (`3/3`) agreement and confidence scores of at least `0.90` from all three annotators.
+`--consensus` accepts `2` or `3`. Both confidence options accept values between
+`0` and `1`.
 
 ### Multi-Model Configuration
 
@@ -152,7 +163,7 @@ python run_annotation.py \
   --agent_config examples/agents_mixed.example.json
 ```
 
-API keys are read from environment variables and should never be stored in the configuration file.
+API keys are read from environment variables and must not be stored in the configuration file.
 
 ### Dry Run
 
@@ -167,7 +178,8 @@ python run_annotation.py \
 
 ## 👤 Human Expert Fallback
 
-For cases that do not satisfy the configured Step 1 or Step 2 acceptance rule, TRAE supports human expert labels through `--expert_csv`.
+For cases that remain unresolved after Step 3, TRAE supports human expert
+labels through `--expert_csv`.
 
 The CSV file must contain an `id` column and one of the following label columns:
 
@@ -183,7 +195,8 @@ id,expert_label
 2,E
 ```
 
-Human labels are applied only to cases that fail the configured automatic acceptance criteria.
+Human labels are applied only when the judge decision does not meet the
+configured Step 3 acceptance criterion.
 
 ## 📁 Outputs
 
@@ -193,11 +206,11 @@ TRAE generates intermediate annotation records, consensus decisions, debate trac
 |---|---|
 | `step1_A/B/C.csv` | Relevance assessment responses from each annotator |
 | `step1_aggregate.csv` | Step 1 votes, confidence scores, and routing decisions |
-| `step2_A/B/C.csv` | ESG classification responses from each annotator |
+| `step2_A/B/C.csv` | ESG classification responses for cases routed from Step 1 |
 | `step2_aggregate.csv` | Step 2 votes, confidence scores, and routing decisions |
-| `step3_debate_raw.csv` | Agent debate claims and complete judge responses |
+| `step3_debate_raw.csv` | Debate and judge responses for unresolved Step 2 cases |
 | `step3_final.csv` | Judge decisions, confidence scores, and acceptance results |
-| `final_annotations.csv` | Final annotation records |
+| `final_annotations.csv` | Final annotation records for each input sentence |
 | `expert_review_queue.csv` | Cases requiring human expert labels |
 | `summary.json` | Annotation completion statistics grouped by label source |
 

@@ -173,9 +173,14 @@ def run_step2(
     out_dir = Path(out_dir)
     ensure_dir(out_dir)
     df = read_input_csv(input_csv)
-    # The published ESG-EN run evaluated every row in Step 2. Step 1 decisions
-    # are applied when constructing the tier, not used to skip annotation.
-    candidates = df.copy()
+    step1_path = out_dir / "step1_aggregate.csv"
+    if not step1_path.exists():
+        raise FileNotFoundError("Step 1 output is required before running Step 2.")
+    step1 = pd.read_csv(step1_path)
+    candidate_ids = set(
+        step1.loc[step1["route_after_step1"] == "step2", "id"].astype(str)
+    )
+    candidates = df[df["id"].astype(str).isin(candidate_ids)].copy()
     save_csv(candidates, out_dir / "step2_candidates.csv")
 
     print(f"Step 2 ESG factor labeling: {len(candidates)} rows")
@@ -223,13 +228,20 @@ def run_step2(
 
         per_role[role] = pd.DataFrame(records)
         if per_role[role].empty:
-            per_role[role] = pd.DataFrame(columns=BASE_COLUMNS)
+            per_role[role] = pd.DataFrame(
+                columns=BASE_COLUMNS
+                + [
+                    f"lab_{role}",
+                    f"conf_{role}",
+                    f"span_{role}",
+                    f"rationale_{role}",
+                    f"raw_{role}",
+                ]
+            )
         save_csv(per_role[role], out_dir / f"step2_{role}.csv")
 
     combined = _safe_base(candidates)
     for role in ROLES:
-        if per_role[role].empty or "id" not in per_role[role].columns:
-            continue
         drop_cols = [col for col in BASE_COLUMNS if col != "id" and col in per_role[role].columns]
         combined = combined.merge(per_role[role].drop(columns=drop_cols), on="id", how="left")
     save_csv(combined, out_dir / "step2_all.csv")
@@ -261,7 +273,19 @@ def run_step2(
         )
         agg_records.append(rec)
 
-    agg = pd.DataFrame(agg_records)
+    agg = pd.DataFrame(
+        agg_records,
+        columns=BASE_COLUMNS
+        + [
+            "lab_votes",
+            "lab_final_initial",
+            "lab_accepted",
+            "lab_agreement",
+            "lab_support_count",
+            "lab_support_conf_min",
+            "need_debate",
+        ],
+    )
     save_csv(agg, out_dir / "step2_aggregate.csv")
     print(f"Step 2 saved to {out_dir}")
     return agg
@@ -275,21 +299,31 @@ def run_step3(
     out_dir = Path(out_dir)
     step2_all = pd.read_csv(out_dir / "step2_all.csv")
     step2_agg = pd.read_csv(out_dir / "step2_aggregate.csv")
+    if step2_agg.empty:
+        debate_df = pd.DataFrame(
+            columns=["id", "sentence", "claims_json", "verdict_json"]
+        )
+        final_df = pd.DataFrame(
+            columns=[
+                "id",
+                "sentence",
+                "lab_final",
+                "judge_confidence",
+                "judge_accepted",
+                "judge_rationale",
+            ]
+        )
+        save_csv(debate_df, out_dir / "step3_debate_raw.csv")
+        save_csv(final_df, out_dir / "step3_final.csv")
+        print(f"Step 3 debate and judge: 0 rows")
+        return final_df
+
     df = step2_all.merge(
         step2_agg[["id", "need_debate", "lab_final_initial"]],
         on="id",
         how="left",
     )
-    # The completed run routed every row except Step 2 3/3 agreement where all
-    # three confidences were at least 0.90. This is the Silver+ audit route and
-    # is intentionally independent of the selected Silver/Silver+ final tier.
-    three_way = (df["lab_A"] == df["lab_B"]) & (df["lab_B"] == df["lab_C"])
-    high_conf = (
-        (pd.to_numeric(df["conf_A"], errors="coerce") >= 0.90)
-        & (pd.to_numeric(df["conf_B"], errors="coerce") >= 0.90)
-        & (pd.to_numeric(df["conf_C"], errors="coerce") >= 0.90)
-    )
-    target = df[~(three_way & high_conf)].copy()
+    target = df[df["need_debate"].map(as_bool)].copy()
     print(f"Step 3 debate and judge: {len(target)} rows")
 
     client = LLMClient(runtime)
@@ -443,12 +477,17 @@ def build_final_dataset(
             final_label = norm_label(s2.get("lab_final_initial"))
             confidence = as_float(s2.get("lab_support_conf_min"))
             label_source = "step2_auto_label"
-            processing_path = "Step1: candidate -> Step2: accepted"
+            processing_path = "Step1: routed -> Step2: accepted"
+        elif s3 is not None and as_bool(s3.get("judge_accepted")):
+            final_label = norm_label(s3.get("lab_final"))
+            confidence = as_float(s3.get("judge_confidence"))
+            label_source = "step3_judge"
+            processing_path = "Step1: routed -> Step2: unresolved -> Step3: accepted"
         elif row_id in experts:
             final_label = experts[row_id]
             confidence = 1.0
             label_source = "human"
-            processing_path = "Tier unresolved -> human label"
+            processing_path = "Step3: unresolved -> human label"
         else:
             if s3 is not None:
                 model_candidate_label = norm_label(s3.get("lab_final"))
