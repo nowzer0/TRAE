@@ -1,0 +1,22 @@
+[project]
+name = "trae-esg"
+version = "1.0.0"
+description = "TRAE annotation pipeline for constructing ESG-EN"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = [
+  "anthropic",
+  "google-genai",
+  "openai",
+  "pandas",
+  "tenacity",
+  "tqdm",
+]
+
+[project.urls]
+Repository = "https://github.com/nowzer0/TRAE"
+Dataset = "https://huggingface.co/datasets/nowzero/ESG-EN"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

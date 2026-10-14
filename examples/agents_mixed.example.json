@@ -1,0 +1,25 @@
+{
+  "agents": {
+    "A": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "api_key_env": "OPENAI_API_KEY"
+    },
+    "B": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash-lite",
+      "api_key_env": "GEMINI_API_KEY"
+    },
+    "C": {
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "api_key_env": "DEEPSEEK_API_KEY"
+    },
+    "judge": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "api_key_env": "OPENAI_API_KEY"
+    }
+  }
+}
+

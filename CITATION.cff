@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use TRAE or ESG-EN, please cite the TRAE paper."
+title: "TRAE"
+type: software
+authors:
+  - family-names: Lee
+    given-names: Jaeyoung
+  - family-names: Kim
+    given-names: Misuk
+repository-code: "https://github.com/nowzer0/TRAE"
+license: "Apache-2.0"
+preferred-citation:
+  type: conference-paper
+  title: "TRAE: Trustworthy Automated ESG Annotation via Multi-Agent Consensus and Confidence Assessment"
+  authors:
+    - family-names: Lee
+      given-names: Jaeyoung
+    - family-names: Kim
+      given-names: Misuk
+  collection-title: "Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM)"
+  year: 2026
