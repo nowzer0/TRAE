@@ -23,6 +23,25 @@ The pipeline was used to construct [ESG-EN](https://huggingface.co/datasets/nowz
 | **TRAE** | Multi-agent ESG annotation framework and source code. | This repository |
 | **ESG-EN** | English ESG dataset constructed using TRAE. | [🤗 Dataset](https://huggingface.co/datasets/nowzero/ESG-EN) |
 
+### Load ESG-EN
+
+```bash
+pip install datasets
+```
+
+```python
+from datasets import load_dataset
+
+# Primary labels: train, validation, and test
+esg_en = load_dataset("nowzero/ESG-EN")
+
+# Agent traces
+base = "hf://datasets/nowzero/ESG-EN/traces"
+step1 = load_dataset("json", data_files=f"{base}/step1.jsonl", split="train")
+step2 = load_dataset("json", data_files=f"{base}/step2.jsonl", split="train")
+step3 = load_dataset("json", data_files=f"{base}/step3.jsonl", split="train")
+```
+
 ## 🔍 TRAE Pipeline
 
 TRAE assigns English sentences to four categories:

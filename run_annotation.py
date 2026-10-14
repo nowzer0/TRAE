@@ -4,8 +4,8 @@ import argparse
 
 from dataclasses import replace
 
-from esg_anno.config import DEFAULT_THRESHOLDS, build_runtime_config
-from esg_anno.pipeline import run_pipeline
+from trae_esg.config import DEFAULT_THRESHOLDS, build_runtime_config
+from trae_esg.pipeline import run_pipeline
 
 
 def main() -> int:
