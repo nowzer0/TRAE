@@ -14,6 +14,14 @@ This repository provides the official **TRAE annotation pipeline**, including ag
 
 The framework was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), a publicly released English ESG annotation dataset.
 
+## TRAE Overview
+
+<p align="center">
+  <img src="assets/trae.png" alt="Overview of the TRAE multi-agent ESG annotation framework" width="100%">
+</p>
+
+<p align="center"><em>TRAE combines multi-agent relevance assessment and ESG factor labeling with confidence-based routing, debate or expert resolution, and final aggregation.</em></p>
+
 ## 📦 Resources
 
 | Resource | Description | Link |
