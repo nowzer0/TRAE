@@ -31,13 +31,14 @@ def test_dry_run_writes_traceable_routes(tmp_path: Path) -> None:
         "step1_auto_irrelevant",
         "step2_auto_label",
         "step3_judge",
-        "expert_required",
+        "unresolved",
     }
     for name in (
         "step1_aggregate.csv",
         "step2_aggregate.csv",
         "step3_final.csv",
         "final_annotations.csv",
+        "unresolved_annotations.csv",
         "summary.json",
     ):
         assert (tmp_path / "run" / name).exists()
@@ -55,7 +56,8 @@ def test_cli_exposes_consensus_and_confidence() -> None:
     )
     assert "--consensus {2,3}" in result.stdout
     assert "--confidence CONFIDENCE" in result.stdout
-    assert "--judge-confidence JUDGE_CONFIDENCE" in result.stdout
+    assert "--judge-confidence" not in result.stdout
+    assert "--expert_csv" not in result.stdout
 
 
 def test_pipeline_filters_rows_at_each_stage(tmp_path: Path, monkeypatch) -> None:
@@ -76,7 +78,6 @@ def test_pipeline_filters_rows_at_each_stage(tmp_path: Path, monkeypatch) -> Non
             return json.dumps(
                 {
                     "final_label": "G",
-                    "judge_confidence": 0.95,
                     "rationale": "The judge resolves the disagreement.",
                 }
             )
@@ -118,8 +119,10 @@ def test_pipeline_filters_rows_at_each_stage(tmp_path: Path, monkeypatch) -> Non
         "step3",
     ]
     assert pd.read_csv(out_dir / "step3_final.csv")["id"].tolist() == ["step3"]
+    assert "judge_confidence" not in pd.read_csv(out_dir / "step3_final.csv").columns
     assert result.set_index("id")["label_source"].to_dict() == {
         "step1": "step1_auto_irrelevant",
         "step2": "step2_auto_label",
         "step3": "step3_judge",
     }
+    assert json.loads((out_dir / "summary.json").read_text())["unresolved"] == 0

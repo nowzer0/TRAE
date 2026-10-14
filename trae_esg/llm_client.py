@@ -154,7 +154,6 @@ class LLMClient:
             return json.dumps(
                 {
                     "final_label": rng.choice(["E", "S", "G", "I"]),
-                    "judge_confidence": round(rng.uniform(0.70, 0.95), 2),
                     "rationale": f"dry-run judge decision for {role}",
                 }
             )

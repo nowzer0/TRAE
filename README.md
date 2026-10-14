@@ -20,7 +20,7 @@ The framework was used to construct [ESG-EN](https://huggingface.co/datasets/now
   <img src="assets/trae.png" alt="Overview of the TRAE multi-agent ESG annotation framework" width="100%">
 </p>
 
-<p align="center"><em>TRAE combines multi-agent relevance assessment and ESG factor labeling with confidence-based routing, debate or expert resolution, and final aggregation.</em></p>
+<p align="center"><em>TRAE combines multi-agent relevance assessment and ESG factor labeling with confidence-based routing, debate, judge resolution, and final aggregation.</em></p>
 
 ## 📦 Resources
 
@@ -68,8 +68,8 @@ The annotation process consists of three routed stages:
    Step 1. Accepted decisions are finalized; unresolved sentences proceed to
    Step 3.
 3. **Debate and Judgment:** Only unresolved Step 2 cases undergo agent debate
-   and judge-based assessment. Cases not accepted by the judge are sent to the
-   human expert queue.
+   and judge-based assessment. The judge selects the final label from
+   `E`, `S`, `G`, and `I`.
 
 ### Confidence-Based Annotation
 
@@ -81,13 +81,12 @@ rule used for **ESG-EN Silver+**:
 - Accepted Step 1 negative decisions are assigned `I`.
 - Accepted Step 2 decisions receive the agreed ESG label.
 - Step 2 cases that do not meet the rule proceed to Step 3.
-- Step 3 decisions require judge confidence of at least **0.70** by default.
-- Remaining cases use human expert labels supplied through `--expert_csv`.
+- The Step 3 judge makes the final label decision after reviewing the debate.
 
-The published ESG-EN Silver+ labels use human fallback outside the accepted
-Step 1 and Step 2 routes; the released Step 3 responses are provided as audit
-traces. This repository implements the complete routed TRAE pipeline, including
-Step 3 decisions.
+For the published ESG-EN Silver+ dataset, cases outside the accepted Step 1 and
+Step 2 routes were finalized by human annotation. The released Step 3 responses
+are provided as annotation traces. The public TRAE implementation instead
+completes those routed cases through debate and a final judge decision.
 
 This repository includes the dataset-construction pipeline, prompts, provider adapters, and a deterministic dry run. Experimental ablations, classifier training, and tier-comparison scripts are not included.
 
@@ -140,7 +139,6 @@ The default thresholds are:
 |---|---|---|
 | `--consensus` | `3` | Number of matching annotator votes required |
 | `--confidence` | `0.90` | Minimum confidence threshold |
-| `--judge-confidence` | `0.70` | Minimum Step 3 judge confidence |
 
 These thresholds can be adjusted when applying TRAE to other datasets:
 
@@ -150,13 +148,12 @@ python run_annotation.py \
   --out_dir runs/custom \
   --consensus 2 \
   --confidence 0.80 \
-  --judge-confidence 0.70 \
   --provider openai \
   --model YOUR_MODEL
 ```
 
-`--consensus` accepts `2` or `3`. Both confidence options accept values between
-`0` and `1`.
+`--consensus` accepts `2` or `3`. `--confidence` accepts values between `0`
+and `1`. Step 3 has no confidence threshold: the judge returns the final label.
 
 ### Multi-Model Configuration
 
@@ -184,27 +181,11 @@ python run_annotation.py \
   --dry_run
 ```
 
-## 👤 Human Expert Fallback
+## Unresolved API Responses
 
-For cases that remain unresolved after Step 3, TRAE supports human expert
-labels through `--expert_csv`.
-
-The CSV file must contain an `id` column and one of the following label columns:
-
-- `expert_label`
-- `final_label`
-- `label`
-
-Example:
-
-```csv
-id,expert_label
-1,I
-2,E
-```
-
-Human labels are applied only when the judge decision does not meet the
-configured Step 3 acceptance criterion.
+TRAE retries malformed or failed model responses. If a valid Step 3 judge label
+still cannot be obtained after the retries, the case is written to
+`unresolved_annotations.csv` for inspection.
 
 ## 📁 Outputs
 
@@ -217,9 +198,9 @@ TRAE generates intermediate annotation records, consensus decisions, debate trac
 | `step2_A/B/C.csv` | ESG classification responses for cases routed from Step 1 |
 | `step2_aggregate.csv` | Step 2 votes, confidence scores, and routing decisions |
 | `step3_debate_raw.csv` | Debate and judge responses for unresolved Step 2 cases |
-| `step3_final.csv` | Judge decisions, confidence scores, and acceptance results |
+| `step3_final.csv` | Final judge labels and rationales |
 | `final_annotations.csv` | Final annotation records for each input sentence |
-| `expert_review_queue.csv` | Cases requiring human expert labels |
+| `unresolved_annotations.csv` | Cases without a valid final label after retries |
 | `summary.json` | Annotation completion statistics grouped by label source |
 
 The released agent responses and normalized routing decisions are available in the [ESG-EN dataset repository](https://huggingface.co/datasets/nowzero/ESG-EN).

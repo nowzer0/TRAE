@@ -91,13 +91,10 @@ JUDGE_SYSTEM = (
     "5) Justification Completeness: The annotator's claim must be logically sound and fully account for the sentence's context.\n"
     "Field guidance:\n"
     "- final_label: choose one of E, S, G, I.\n"
-    "- judge_confidence: numeric score [0,1]. Calibration: 0.90–1.00 = clear; 0.70–0.89 = minor ambiguity; "
-    "0.50–0.69 = weak evidence; <0.50 = very uncertain.\n"
     "- rationale: Justify your decision by explaining how the selected claim outperforms opposing arguments based on specific textual evidence and the checklist (3-4 sentences). \n\n"
     "Return STRICT JSON ONLY in this exact format:\n"
     "{\n"
     '  "final_label": "E" | "S" | "G" | "I",\n'
-    '  "judge_confidence": number,\n'
     '  "rationale": string\n'
     "}"
 )

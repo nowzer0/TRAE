@@ -61,7 +61,7 @@ def _validate_label(obj: dict[str, Any]) -> bool:
 
 
 def _validate_judge(obj: dict[str, Any]) -> bool:
-    return norm_label(obj.get("final_label")) is not None and 0.0 <= as_float(obj.get("judge_confidence")) <= 1.0
+    return norm_label(obj.get("final_label")) is not None
 
 
 def run_step1(
@@ -294,7 +294,6 @@ def run_step2(
 def run_step3(
     out_dir: str | Path,
     runtime: RuntimeConfig,
-    thresholds: Thresholds,
 ) -> pd.DataFrame:
     out_dir = Path(out_dir)
     step2_all = pd.read_csv(out_dir / "step2_all.csv")
@@ -308,8 +307,6 @@ def run_step3(
                 "id",
                 "sentence",
                 "lab_final",
-                "judge_confidence",
-                "judge_accepted",
                 "judge_rationale",
             ]
         )
@@ -381,11 +378,9 @@ def run_step3(
                 validate=_validate_judge,
             )
         except Exception as exc:
-            verdict = {"final_label": None, "judge_confidence": 0.0, "rationale": f"ERROR: {exc}"}
+            verdict = {"final_label": None, "rationale": f"ERROR: {exc}"}
 
-        judge_conf = as_float(verdict.get("judge_confidence"))
         final_label = norm_label(verdict.get("final_label"))
-        accepted = final_label is not None and judge_conf >= thresholds.tau_j
 
         debate_records.append(
             {
@@ -400,8 +395,6 @@ def run_step3(
                 "id": row.get("id"),
                 "sentence": sentence,
                 "lab_final": final_label,
-                "judge_confidence": judge_conf,
-                "judge_accepted": accepted,
                 "judge_rationale": verdict.get("rationale") or verdict.get("notes"),
             }
         )
@@ -422,47 +415,24 @@ def _index_by_id(df: pd.DataFrame) -> pd.DataFrame:
     return out.set_index("_id_key", drop=False)
 
 
-def _expert_labels(expert_csv: str | Path | None) -> dict[str, str]:
-    if not expert_csv:
-        return {}
-    df = read_optional_csv(expert_csv)
-    if df.empty:
-        return {}
-    label_col = next(
-        (col for col in ("expert_label", "final_label", "label") if col in df.columns),
-        None,
-    )
-    if label_col is None or "id" not in df.columns:
-        raise ValueError("Expert CSV must contain 'id' and one of expert_label/final_label/label.")
-    return {
-        str(row["id"]): norm_label(row[label_col])
-        for _, row in df.iterrows()
-        if norm_label(row[label_col]) is not None
-    }
-
-
 def build_final_dataset(
     input_csv: str | Path,
     out_dir: str | Path,
-    *,
-    expert_csv: str | Path | None = None,
 ) -> pd.DataFrame:
     out_dir = Path(out_dir)
     df = read_input_csv(input_csv)
     step1 = _index_by_id(read_optional_csv(out_dir / "step1_aggregate.csv"))
     step2 = _index_by_id(read_optional_csv(out_dir / "step2_aggregate.csv"))
     step3 = _index_by_id(read_optional_csv(out_dir / "step3_final.csv"))
-    experts = _expert_labels(expert_csv)
 
     final_records = []
     for idx, row in df.iterrows():
         rec = metadata_from_row(row, idx)
         row_id = str(rec["id"])
         final_label = None
-        confidence = 0.0
-        label_source = "expert_required"
+        confidence = None
+        label_source = "unresolved"
         processing_path = "unresolved"
-        model_candidate_label = None
 
         s1 = step1.loc[row_id] if not step1.empty and row_id in step1.index else None
         s2 = step2.loc[row_id] if not step2.empty and row_id in step2.index else None
@@ -478,23 +448,10 @@ def build_final_dataset(
             confidence = as_float(s2.get("lab_support_conf_min"))
             label_source = "step2_auto_label"
             processing_path = "Step1: routed -> Step2: accepted"
-        elif s3 is not None and as_bool(s3.get("judge_accepted")):
+        elif s3 is not None and norm_label(s3.get("lab_final")) is not None:
             final_label = norm_label(s3.get("lab_final"))
-            confidence = as_float(s3.get("judge_confidence"))
             label_source = "step3_judge"
-            processing_path = "Step1: routed -> Step2: unresolved -> Step3: accepted"
-        elif row_id in experts:
-            final_label = experts[row_id]
-            confidence = 1.0
-            label_source = "human"
-            processing_path = "Step3: unresolved -> human label"
-        else:
-            if s3 is not None:
-                model_candidate_label = norm_label(s3.get("lab_final"))
-                confidence = as_float(s3.get("judge_confidence"))
-            elif s2 is not None:
-                model_candidate_label = norm_label(s2.get("lab_final_initial"))
-                confidence = as_float(s2.get("lab_support_conf_min"))
+            processing_path = "Step1: routed -> Step2: unresolved -> Step3: judge"
 
         rec.update(
             {
@@ -502,26 +459,25 @@ def build_final_dataset(
                 "confidence": confidence,
                 "label_source": label_source,
                 "processing_path": processing_path,
-                "requires_expert": final_label is None,
-                "model_candidate_label": model_candidate_label,
+                "unresolved": final_label is None,
             }
         )
         final_records.append(rec)
 
     final_df = pd.DataFrame(final_records)
-    queue_df = final_df[final_df["requires_expert"] == True].copy()
+    unresolved_df = final_df[final_df["unresolved"] == True].copy()
     save_csv(final_df, out_dir / "final_annotations.csv")
-    save_csv(queue_df, out_dir / "expert_review_queue.csv")
+    save_csv(unresolved_df, out_dir / "unresolved_annotations.csv")
 
     summary = {
         "total": int(len(final_df)),
         "completed": int(final_df["final_label"].notna().sum()),
-        "requires_expert": int(queue_df.shape[0]),
+        "unresolved": int(unresolved_df.shape[0]),
         "by_source": final_df["label_source"].value_counts(dropna=False).to_dict(),
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"Final annotations saved to {out_dir / 'final_annotations.csv'}")
-    print(f"Expert review queue saved to {out_dir / 'expert_review_queue.csv'}")
+    print(f"Unresolved annotations saved to {out_dir / 'unresolved_annotations.csv'}")
     return final_df
 
 
@@ -530,10 +486,8 @@ def run_pipeline(
     out_dir: str | Path,
     runtime: RuntimeConfig,
     thresholds: Thresholds,
-    *,
-    expert_csv: str | Path | None = None,
 ) -> pd.DataFrame:
     run_step1(input_csv, out_dir, runtime, thresholds)
     run_step2(input_csv, out_dir, runtime, thresholds)
-    run_step3(out_dir, runtime, thresholds)
-    return build_final_dataset(input_csv, out_dir, expert_csv=expert_csv)
+    run_step3(out_dir, runtime)
+    return build_final_dataset(input_csv, out_dir)

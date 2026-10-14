@@ -40,18 +40,13 @@ class RuntimeConfig:
 
 @dataclass
 class Thresholds:
-    tau_rel: float = 0.70
-    tau_lab: float = 0.70
-    tau_j: float = 0.70
+    tau_rel: float = 0.90
+    tau_lab: float = 0.90
     min_votes: int = 3
 
 
-# Fixed release settings used by the ESG-EN construction pipeline.  Keeping
-# these values in one place makes the published procedure explicit without
-# exposing experiment-only tuning switches in the command line interface.
-DEFAULT_THRESHOLDS = Thresholds(
-    tau_rel=0.90, tau_lab=0.90, tau_j=0.70, min_votes=3
-)
+# Default high-confidence routing settings used by the release pipeline.
+DEFAULT_THRESHOLDS = Thresholds(tau_rel=0.90, tau_lab=0.90, min_votes=3)
 
 
 def default_api_key_env(provider: str) -> str:
