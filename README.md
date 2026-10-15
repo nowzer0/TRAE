@@ -1,18 +1,25 @@
 # TRAE
 
 [![Paper](https://img.shields.io/badge/Paper-ICDM%202026-blue)](#-citation)
-[![Dataset](https://img.shields.io/badge/Hugging%20Face-ESG--EN-yellow?logo=huggingface)](https://huggingface.co/datasets/nowzero/ESG-EN)
+[![Release](https://img.shields.io/badge/Release-After%20ICDM%202026%20Presentation-orange)](#release-notice)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 
 **TRAE: Trustworthy Automated ESG Annotation via Multi-Agent Consensus and Confidence Assessment**
 
 Official implementation of our paper accepted at **ICDM 2026**.
 
+## Release Notice
+
+The TRAE source code, ESG-EN dataset, and annotation traces will be made
+publicly available after the paper presentation at ICDM 2026. The repositories
+remain private until the official release.
+
 TRAE is a multi-agent framework for trustworthy ESG annotation that integrates consensus-based decisions, confidence assessment, and agent debate with judge-based evaluation.
 
 This repository provides the official **TRAE annotation pipeline**, including agent prompts, provider adapters, confidence-based routing, and reproducible execution scripts.
 
-The framework was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), a publicly released English ESG annotation dataset.
+The framework was used to construct ESG-EN, an English ESG annotation dataset
+that will be released with the official project materials.
 
 ## TRAE Overview
 
@@ -27,27 +34,9 @@ The framework was used to construct [ESG-EN](https://huggingface.co/datasets/now
 | Resource | Description | Link |
 |---|---|---|
 | **TRAE** | Multi-agent ESG annotation framework and source code. | This repository |
-| **ESG-EN** | English ESG annotation dataset constructed using TRAE. | [🤗 Dataset](https://huggingface.co/datasets/nowzero/ESG-EN) |
+| **ESG-EN** | English ESG annotation dataset constructed using TRAE. | Available after the ICDM 2026 presentation |
 
-### Load ESG-EN
-
-```bash
-pip install datasets
-```
-
-```python
-from datasets import load_dataset
-
-# Primary labels: train, validation, and test
-esg_en = load_dataset("nowzero/ESG-EN")
-
-# Agent annotation traces
-base = "hf://datasets/nowzero/ESG-EN/traces"
-
-step1 = load_dataset("json", data_files=f"{base}/step1.jsonl", split="train")
-step2 = load_dataset("json", data_files=f"{base}/step2.jsonl", split="train")
-step3 = load_dataset("json", data_files=f"{base}/step3.jsonl", split="train")
-```
+Loading instructions will be added when ESG-EN is publicly released.
 
 ## 🔍 TRAE Pipeline
 
@@ -205,7 +194,8 @@ TRAE generates intermediate annotation records, consensus decisions, debate trac
 | `unresolved_annotations.csv` | Cases without a valid final label after retries |
 | `summary.json` | Annotation completion statistics grouped by label source |
 
-The released agent responses and normalized routing decisions are available in the [ESG-EN dataset repository](https://huggingface.co/datasets/nowzero/ESG-EN).
+The agent responses and normalized routing decisions will be distributed with
+ESG-EN after the official release.
 
 Source sustainability reports are not redistributed with ESG-EN.
 
@@ -225,7 +215,9 @@ For reproducibility, we recommend preserving:
 
 TRAE source code is released under the [Apache License 2.0](LICENSE).
 
-The ESG-EN dataset is distributed separately under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/), subject to applicable third-party data terms.
+Upon release, the ESG-EN dataset will be distributed separately under
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/), subject to
+applicable third-party data terms.
 
 ## 📝 Citation
 
