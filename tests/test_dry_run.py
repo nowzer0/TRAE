@@ -78,6 +78,7 @@ def test_pipeline_filters_rows_at_each_stage(tmp_path: Path, monkeypatch) -> Non
             return json.dumps(
                 {
                     "final_label": "G",
+                    "judge_confidence": 0.82,
                     "rationale": "The judge resolves the disagreement.",
                 }
             )
@@ -119,7 +120,8 @@ def test_pipeline_filters_rows_at_each_stage(tmp_path: Path, monkeypatch) -> Non
         "step3",
     ]
     assert pd.read_csv(out_dir / "step3_final.csv")["id"].tolist() == ["step3"]
-    assert "judge_confidence" not in pd.read_csv(out_dir / "step3_final.csv").columns
+    step3 = pd.read_csv(out_dir / "step3_final.csv")
+    assert step3["judge_confidence"].tolist() == [0.82]
     assert result.set_index("id")["label_source"].to_dict() == {
         "step1": "step1_auto_irrelevant",
         "step2": "step2_auto_label",

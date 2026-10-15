@@ -307,6 +307,7 @@ def run_step3(
                 "id",
                 "sentence",
                 "lab_final",
+                "judge_confidence",
                 "judge_rationale",
             ]
         )
@@ -378,9 +379,14 @@ def run_step3(
                 validate=_validate_judge,
             )
         except Exception as exc:
-            verdict = {"final_label": None, "rationale": f"ERROR: {exc}"}
+            verdict = {
+                "final_label": None,
+                "judge_confidence": 0.0,
+                "rationale": f"ERROR: {exc}",
+            }
 
         final_label = norm_label(verdict.get("final_label"))
+        judge_confidence = as_float(verdict.get("judge_confidence"))
 
         debate_records.append(
             {
@@ -395,6 +401,7 @@ def run_step3(
                 "id": row.get("id"),
                 "sentence": sentence,
                 "lab_final": final_label,
+                "judge_confidence": judge_confidence,
                 "judge_rationale": verdict.get("rationale") or verdict.get("notes"),
             }
         )

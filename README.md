@@ -153,7 +153,9 @@ python run_annotation.py \
 ```
 
 `--consensus` accepts `2` or `3`. `--confidence` accepts values between `0`
-and `1`. Step 3 has no confidence threshold: the judge returns the final label.
+and `1`. As in the research prompt, the Step 3 judge reports
+`judge_confidence`; it is retained as trace metadata and is not used as an
+additional acceptance threshold in the released pipeline.
 
 ### Multi-Model Configuration
 
@@ -198,7 +200,7 @@ TRAE generates intermediate annotation records, consensus decisions, debate trac
 | `step2_A/B/C.csv` | ESG classification responses for cases routed from Step 1 |
 | `step2_aggregate.csv` | Step 2 votes, confidence scores, and routing decisions |
 | `step3_debate_raw.csv` | Debate and judge responses for unresolved Step 2 cases |
-| `step3_final.csv` | Final judge labels and rationales |
+| `step3_final.csv` | Final judge labels, confidence values, and rationales |
 | `final_annotations.csv` | Final annotation records for each input sentence |
 | `unresolved_annotations.csv` | Cases without a valid final label after retries |
 | `summary.json` | Annotation completion statistics grouped by label source |
