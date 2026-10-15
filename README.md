@@ -1,18 +1,13 @@
 # TRAE
 
 [![Paper](https://img.shields.io/badge/Paper-ICDM%202026-blue)](#-citation)
-[![Dataset Release](https://img.shields.io/badge/ESG--EN-After%20ICDM%202026%20Presentation-orange)](#release-notice)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 
 **TRAE: Trustworthy Automated ESG Annotation via Multi-Agent Consensus and Confidence Assessment**
 
 Official implementation of our paper accepted at **ICDM 2026**.
 
-## Release Notice
-
-The TRAE source code is publicly available in this repository. The ESG-EN
-dataset and its annotation traces will be made publicly available after the
-paper presentation at ICDM 2026.
+The ESG-EN dataset and its annotation traces will be released after the paper presentation at ICDM 2026.
 
 TRAE is a multi-agent framework for trustworthy ESG annotation that integrates consensus-based decisions, confidence assessment, and agent debate with judge-based evaluation.
 
