@@ -12,7 +12,7 @@ TRAE is a multi-agent framework for trustworthy ESG annotation that integrates c
 
 This repository provides the official **TRAE annotation pipeline**, including agent prompts, provider adapters, confidence-based routing, and reproducible execution scripts.
 
-The framework was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), an English ESG annotation dataset that is currently private and will be publicly released after the paper presentation at ICDM 2026.
+The framework was used to construct [ESG-EN](https://huggingface.co/datasets/nowzero/ESG-EN), a publicly available English ESG annotation dataset.
 
 ## TRAE Overview
 
